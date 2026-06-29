@@ -1,0 +1,44 @@
+<%- include('partials/header') %>
+
+<h1>Habit Stopper</h1>
+
+<form method="GET" action="/habits" class="date-picker">
+  <label>Viewing date:</label>
+  <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
+</form>
+
+<form action="/habits" method="POST" class="form-card">
+  <h3>New Habit to Stop</h3>
+  <input type="text" name="title" placeholder="Habit (e.g. Smoking)" required>
+  <input type="number" name="targetDays" placeholder="Target days clean" required>
+  <button type="submit" class="btn">Add Habit</button>
+</form>
+
+<div class="list">
+  <% habits.forEach(h => {
+       const check = checksMap[h._id.toString()];
+       const progress = Math.min(100, Math.round((h.streak / h.targetDays) * 100));
+  %>
+    <div class="item-card">
+      <h3><%= h.title %></h3>
+      <p><small>Target: <%= h.targetDays %> days clean • Current streak: <strong><%= h.streak %></strong> days</small></p>
+      <div class="progress-bar"><div class="progress-fill" style="width: <%= progress %>%"></div></div>
+
+      <form action="/habits/<%= h._id %>/check" method="POST" class="inline-form">
+        <input type="hidden" name="date" value="<%= date %>">
+        <label class="checkbox-label">
+          <input type="checkbox" name="succeeded" <%= check && check.succeeded ? 'checked' : '' %>>
+          Stayed clean on <%= date %>
+        </label>
+        <input type="text" name="comment" placeholder="Comment / trigger notes" value="<%= check ? (check.comment || '') : '' %>">
+        <button type="submit" class="btn small">Save Check</button>
+      </form>
+
+      <form action="/habits/<%= h._id %>?_method=DELETE" method="POST">
+        <button type="submit" class="btn small danger">Delete Habit</button>
+      </form>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('partials/footer') %>

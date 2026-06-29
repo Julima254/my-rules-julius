@@ -1,0 +1,56 @@
+<%- include('partials/header') %>
+
+<h1>Achievements</h1>
+
+<form action="/achievements" method="POST" class="form-card">
+  <h3>New Achievement</h3>
+  <input type="text" name="title" placeholder="Achievement title" required>
+  <textarea name="description" placeholder="Description"></textarea>
+  <label>Target date</label>
+  <input type="date" name="targetDate">
+  <button type="submit" class="btn">Add Achievement</button>
+</form>
+
+<div class="list">
+  <% achievements.forEach(a => { %>
+    <div class="item-card <%= a.dateAchieved ? 'success' : (a.dateFailed ? 'failed' : '') %>">
+      <h3><%= a.title %></h3>
+      <% if (a.description) { %><p><%= a.description %></p><% } %>
+      <p><small>Target: <%= a.targetDate ? a.targetDate.toDateString() : 'No date set' %></small></p>
+
+      <% if (a.dateAchieved) { %>
+        <p class="tag success">✅ Achieved on <%= a.dateAchieved.toDateString() %></p>
+      <% } else if (a.dateFailed) { %>
+        <p class="tag failed">❌ Failed on <%= a.dateFailed.toDateString() %></p>
+      <% } else { %>
+        <p class="tag pending">⏳ Pending</p>
+      <% } %>
+
+      <form action="/achievements/<%= a._id %>" method="POST">
+        <input type="hidden" name="_method" value="PUT">
+        <input type="text" name="title" value="<%= a.title %>" required>
+        <textarea name="description"><%= a.description %></textarea>
+        <input type="date" name="targetDate" value="<%= a.targetDate ? a.targetDate.toISOString().split('T')[0] : '' %>">
+        <textarea name="notes" placeholder="Notes"><%= a.notes || '' %></textarea>
+        <button type="submit" class="btn small">Save</button>
+      </form>
+
+      <div class="action-row">
+        <form action="/achievements/<%= a._id %>/achieve?_method=PUT" method="POST">
+          <button type="submit" class="btn small success">Mark Achieved</button>
+        </form>
+        <form action="/achievements/<%= a._id %>/fail?_method=PUT" method="POST">
+          <button type="submit" class="btn small failed">Mark Failed</button>
+        </form>
+        <form action="/achievements/<%= a._id %>/reset?_method=PUT" method="POST">
+          <button type="submit" class="btn small">Reset</button>
+        </form>
+        <form action="/achievements/<%= a._id %>?_method=DELETE" method="POST">
+          <button type="submit" class="btn small danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('partials/footer') %>

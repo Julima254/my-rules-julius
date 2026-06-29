@@ -1,0 +1,42 @@
+<%- include('partials/header') %>
+
+<h1>Rules - Daily Check</h1>
+
+<form method="GET" action="/rules" class="date-picker">
+  <label>Viewing date:</label>
+  <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
+</form>
+
+<form action="/rules" method="POST" class="form-card">
+  <h3>New Rule</h3>
+  <input type="text" name="title" placeholder="Rule title" required>
+  <textarea name="description" placeholder="Description"></textarea>
+  <button type="submit" class="btn">Add Rule</button>
+</form>
+
+<div class="list">
+  <% rules.forEach(r => {
+       const check = checksMap[r._id.toString()];
+  %>
+    <div class="item-card <%= check && check.followed ? 'success' : '' %>">
+      <h3><%= r.title %></h3>
+      <% if (r.description) { %><p><%= r.description %></p><% } %>
+
+      <form action="/rules/<%= r._id %>/check" method="POST" class="inline-form">
+        <input type="hidden" name="date" value="<%= date %>">
+        <label class="checkbox-label">
+          <input type="checkbox" name="followed" <%= check && check.followed ? 'checked' : '' %> onchange="this.form.submit()">
+          Followed this rule on <%= date %>
+        </label>
+        <input type="text" name="comment" placeholder="Comment" value="<%= check ? (check.comment || '') : '' %>">
+        <button type="submit" class="btn small">Save Check</button>
+      </form>
+
+      <form action="/rules/<%= r._id %>?_method=DELETE" method="POST">
+        <button type="submit" class="btn small danger">Delete Rule</button>
+      </form>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('partials/footer') %>

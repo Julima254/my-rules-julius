@@ -1,0 +1,31 @@
+<%- include('partials/header') %>
+
+<h1>Dashboard</h1>
+<p class="subtitle">Year: <%= currentYear %> • Theme: <strong><%= stats.currentTheme %></strong></p>
+
+<div class="card-grid">
+  <div class="stat-card">
+    <h3>Achievements</h3>
+    <p class="big-num"><%= stats.totalAchievements %></p>
+    <p>✅ <%= stats.achieved %> achieved &nbsp; ❌ <%= stats.failed %> failed &nbsp; ⏳ <%= stats.pending %> pending</p>
+  </div>
+  <div class="stat-card">
+    <h3>Active Rules</h3>
+    <p class="big-num"><%= stats.activeRules %></p>
+  </div>
+  <div class="stat-card">
+    <h3>Habits Being Stopped</h3>
+    <p class="big-num"><%= stats.activeHabits %></p>
+  </div>
+</div>
+
+<div class="quick-links">
+  <a href="/achievements" class="btn">Manage Achievements</a>
+  <a href="/rules" class="btn">Daily Rule Check</a>
+  <a href="/career" class="btn">Career Tasks</a>
+  <a href="/routine" class="btn">Daily Routine</a>
+  <a href="/theme" class="btn">Theme of the Year</a>
+  <a href="/habits" class="btn">Habit Stopper</a>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,43 @@
+<%- include('partials/header') %>
+
+<h1>Career</h1>
+
+<form action="/career" method="POST" class="form-card">
+  <h3>New Career Task</h3>
+  <input type="text" name="task" placeholder="Task" required>
+  <textarea name="description" placeholder="Description"></textarea>
+  <label>Target date</label>
+  <input type="date" name="targetDate">
+  <button type="submit" class="btn">Add Task</button>
+</form>
+
+<div class="list">
+  <% tasks.forEach(t => { %>
+    <div class="item-card status-<%= t.status %>">
+      <h3><%= t.task %></h3>
+      <% if (t.description) { %><p><%= t.description %></p><% } %>
+      <p><small>Target: <%= t.targetDate ? t.targetDate.toDateString() : 'No date' %></small></p>
+      <p class="tag"><%= t.status %></p>
+      <% if (t.dateAchieved) { %><p><small>Achieved: <%= t.dateAchieved.toDateString() %></small></p><% } %>
+
+      <form action="/career/<%= t._id %>?_method=PUT" method="POST">
+        <input type="text" name="task" value="<%= t.task %>" required>
+        <textarea name="description"><%= t.description %></textarea>
+        <input type="date" name="targetDate" value="<%= t.targetDate ? t.targetDate.toISOString().split('T')[0] : '' %>">
+        <select name="status">
+          <option value="pending" <%= t.status === 'pending' ? 'selected' : '' %>>Pending</option>
+          <option value="in-progress" <%= t.status === 'in-progress' ? 'selected' : '' %>>In Progress</option>
+          <option value="achieved" <%= t.status === 'achieved' ? 'selected' : '' %>>Achieved</option>
+          <option value="missed" <%= t.status === 'missed' ? 'selected' : '' %>>Missed</option>
+        </select>
+        <button type="submit" class="btn small">Save</button>
+      </form>
+
+      <form action="/career/<%= t._id %>?_method=DELETE" method="POST">
+        <button type="submit" class="btn small danger">Delete</button>
+      </form>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('partials/footer') %>

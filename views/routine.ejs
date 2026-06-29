@@ -1,0 +1,40 @@
+<%- include('partials/header') %>
+
+<h1>Daily Routine</h1>
+
+<form method="GET" action="/routine" class="date-picker">
+  <label>Viewing date:</label>
+  <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
+</form>
+
+<form action="/routine" method="POST" class="form-card">
+  <h3>New Hourly Slot</h3>
+  <input type="time" name="hour" required>
+  <input type="text" name="task" placeholder="Task for this hour" required>
+  <button type="submit" class="btn">Add Slot</button>
+</form>
+
+<div class="list">
+  <% slots.forEach(s => {
+       const done = checksMap[s._id.toString()];
+  %>
+    <div class="item-card routine-row <%= done ? 'success' : '' %>">
+      <span class="hour-badge"><%= s.hour %></span>
+      <span class="task-text"><%= s.task %></span>
+
+      <form action="/routine/<%= s._id %>/check" method="POST" class="inline-form">
+        <input type="hidden" name="date" value="<%= date %>">
+        <label class="checkbox-label">
+          <input type="checkbox" name="done" <%= done ? 'checked' : '' %> onchange="this.form.submit()">
+          Done
+        </label>
+      </form>
+
+      <form action="/routine/<%= s._id %>?_method=DELETE" method="POST">
+        <button type="submit" class="btn small danger">Delete</button>
+      </form>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('partials/footer') %>

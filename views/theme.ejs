@@ -1,0 +1,25 @@
+<%- include('partials/header') %>
+
+<h1>Theme of the Year</h1>
+
+<form action="/theme" method="POST" class="form-card">
+  <h3>Set Theme</h3>
+  <input type="number" name="year" placeholder="Year" value="<%= new Date().getFullYear() %>" required>
+  <input type="text" name="theme" placeholder="Theme (e.g. 'Year of Discipline')" required>
+  <textarea name="description" placeholder="Why this theme?"></textarea>
+  <button type="submit" class="btn">Save Theme</button>
+</form>
+
+<div class="list">
+  <% themes.forEach(t => { %>
+    <div class="item-card">
+      <h3><%= t.year %> — <%= t.theme %></h3>
+      <% if (t.description) { %><p><%= t.description %></p><% } %>
+      <form action="/theme/<%= t._id %>?_method=DELETE" method="POST">
+        <button type="submit" class="btn small danger">Delete</button>
+      </form>
+    </div>
+  <% }) %>
+</div>
+
+<%- include('partials/footer') %>
