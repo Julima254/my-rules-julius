@@ -26,14 +26,13 @@
         <p class="tag pending">⏳ Pending</p>
       <% } %>
 
-      <form action="/achievements/<%= a._id %>" method="POST">
-        <input type="hidden" name="_method" value="PUT">
-        <input type="text" name="title" value="<%= a.title %>" required>
-        <textarea name="description"><%= a.description %></textarea>
-        <input type="date" name="targetDate" value="<%= a.targetDate ? a.targetDate.toISOString().split('T')[0] : '' %>">
-        <textarea name="notes" placeholder="Notes"><%= a.notes || '' %></textarea>
-        <button type="submit" class="btn small">Save</button>
-      </form>
+      <form action="/achievements/<%= a._id %>?_method=PUT" method="POST">
+  <input type="text" name="title" value="<%= a.title %>" required>
+  <textarea name="description"><%= a.description %></textarea>
+  <input type="date" name="targetDate" value="<%= a.targetDate ? a.targetDate.toISOString().split('T')[0] : '' %>">
+  <textarea name="notes" placeholder="Notes"><%= a.notes || '' %></textarea>
+  <button type="submit" class="btn small">Save</button>
+</form>
 
       <div class="action-row">
         <form action="/achievements/<%= a._id %>/achieve?_method=PUT" method="POST">
