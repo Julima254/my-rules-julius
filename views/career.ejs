@@ -1,43 +1,363 @@
 <%- include('partials/header') %>
 
-<h1>Career</h1>
+<style>
+  :root {
+    --bg: #F5F7FA;
+    --surface: #FFFFFF;
+    --border: #E3E7ED;
+    --text: #1D2433;
+    --text-muted: #6B7280;
+    --accent: #2F6FED;
+    --accent-hover: #2559C7;
+    --accent-soft: #EAF1FF;
+    --success: #16A34A;
+    --success-soft: #E7F7EC;
+    --warning: #D97706;
+    --warning-soft: #FDF2E3;
+    --danger: #DC2626;
+    --danger-soft: #FDECEC;
+    --pending: #6B7280;
+    --pending-soft: #F0F1F3;
+    --radius: 12px;
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-md: 0 8px 24px rgba(16, 24, 40, 0.12);
+  }
 
-<form action="/career" method="POST" class="form-card">
-  <h3>New Career Task</h3>
-  <input type="text" name="task" placeholder="Task" required>
-  <textarea name="description" placeholder="Description"></textarea>
-  <label>Target date</label>
-  <input type="date" name="targetDate">
-  <button type="submit" class="btn">Add Task</button>
-</form>
+  * { box-sizing: border-box; }
 
-<div class="list">
-  <% tasks.forEach(t => { %>
-    <div class="item-card status-<%= t.status %>">
-      <h3><%= t.task %></h3>
-      <% if (t.description) { %><p><%= t.description %></p><% } %>
-      <p><small>Target: <%= t.targetDate ? t.targetDate.toDateString() : 'No date' %></small></p>
-      <p class="tag"><%= t.status %></p>
-      <% if (t.dateAchieved) { %><p><small>Achieved: <%= t.dateAchieved.toDateString() %></small></p><% } %>
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
 
-      <form action="/career/<%= t._id %>?_method=PUT" method="POST">
-        <input type="text" name="task" value="<%= t.task %>" required>
-        <textarea name="description"><%= t.description %></textarea>
-        <input type="date" name="targetDate" value="<%= t.targetDate ? t.targetDate.toISOString().split('T')[0] : '' %>">
-        <select name="status">
-          <option value="pending" <%= t.status === 'pending' ? 'selected' : '' %>>Pending</option>
-          <option value="in-progress" <%= t.status === 'in-progress' ? 'selected' : '' %>>In Progress</option>
-          <option value="achieved" <%= t.status === 'achieved' ? 'selected' : '' %>>Achieved</option>
-          <option value="missed" <%= t.status === 'missed' ? 'selected' : '' %>>Missed</option>
-        </select>
-        <button type="submit" class="btn small">Save</button>
-      </form>
+  .career-page h1 {
+    font-family: 'Manrope', 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 1.75rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin: 0 0 1.5rem 0;
+  }
 
-      <form action="/career/<%= t._id %>?_method=DELETE" method="POST">
-        <button type="submit" class="btn small danger">Delete</button>
+  /* ---------- Task list / grid ---------- */
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    padding-bottom: 6rem; /* clearance for FAB */
+  }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.2rem;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+
+  .item-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .item-card h3 {
+    font-family: 'Manrope', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 0.3rem 0;
+    color: var(--text);
+  }
+
+  .item-card .desc-preview {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0 0 0.7rem 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .badge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    margin: 0;
+  }
+
+  .status-pending .tag       { background: var(--pending-soft); color: var(--pending); }
+  .status-in-progress .tag   { background: var(--accent-soft);  color: var(--accent); }
+  .status-achieved .tag      { background: var(--success-soft); color: var(--success); }
+  .status-missed .tag        { background: var(--danger-soft);  color: var(--danger); }
+
+  .deadline-chip {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: var(--pending-soft);
+    color: var(--text-muted);
+  }
+  .deadline-chip.soon     { background: var(--warning-soft); color: var(--warning); }
+  .deadline-chip.overdue  { background: var(--danger-soft);  color: var(--danger); }
+
+  /* ---------- Collapsible "See more" ---------- */
+  details.more-details summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    user-select: none;
+  }
+  details.more-details summary::-webkit-details-marker { display: none; }
+  details.more-details summary::after {
+    content: "See more";
+  }
+  details.more-details[open] summary::after {
+    content: "See less";
+  }
+
+  .more-content {
+    margin-top: 0.8rem;
+    padding-top: 0.8rem;
+    border-top: 1px dashed var(--border);
+  }
+
+  .more-content p { font-size: 0.85rem; color: var(--text-muted); margin: 0.2rem 0; }
+  .more-content .full-desc { color: var(--text); margin-bottom: 0.6rem; }
+
+  .edit-form, .delete-form { margin-top: 0.6rem; }
+
+  .edit-form input,
+  .edit-form textarea,
+  .edit-form select {
+    width: 100%;
+    padding: 0.5rem 0.6rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .edit-form textarea { resize: vertical; min-height: 60px; }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn.small { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+  .btn.danger { background: var(--danger); }
+  .btn.danger:hover { background: #B91C1C; }
+
+  .form-row { display: flex; gap: 0.5rem; }
+  .form-row .btn { flex-shrink: 0; }
+
+  /* ---------- Floating Add button ---------- */
+  .fab {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-size: 1.8rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    z-index: 100;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  .fab:hover { background: var(--accent-hover); transform: scale(1.05); }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 24, 40, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .form-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow-md);
+    position: relative;
+  }
+
+  .form-card h3 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    margin: 0 0 1rem 0;
+    color: var(--text);
+  }
+
+  .form-card input,
+  .form-card textarea {
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    margin-bottom: 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .form-card textarea { min-height: 70px; resize: vertical; }
+  .form-card label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 0.9rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  @media (max-width: 480px) {
+    .list { grid-template-columns: 1fr; }
+    .fab { bottom: 1.25rem; right: 1.25rem; }
+  }
+</style>
+
+<div class="career-page">
+  <h1>Career</h1>
+
+  <!-- Floating Add button -->
+  <button class="fab" id="openAddModal" aria-label="Add new task" title="Add task">+</button>
+
+  <!-- Add Task Modal -->
+  <div class="modal-overlay" id="addModalOverlay">
+    <div class="form-card">
+      <button class="modal-close" id="closeAddModal" aria-label="Close">&times;</button>
+      <h3>New Career Task</h3>
+      <form action="/career" method="POST">
+        <input type="text" name="task" placeholder="Task" required>
+        <textarea name="description" placeholder="Description"></textarea>
+        <label>Target date</label>
+        <input type="date" name="targetDate">
+        <button type="submit" class="btn">Add Task</button>
       </form>
     </div>
-  <% }) %>
+  </div>
+
+  <div class="list">
+    <% tasks.forEach(t => {
+      let daysLeft = null;
+      let deadlineClass = '';
+      let deadlineText = '';
+      if (t.targetDate) {
+        daysLeft = Math.ceil((new Date(t.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
+        if (t.status !== 'achieved' && t.status !== 'missed') {
+          if (daysLeft < 0) { deadlineClass = 'overdue'; deadlineText = 'Overdue'; }
+          else if (daysLeft <= 7) { deadlineClass = 'soon'; deadlineText = daysLeft + 'd left'; }
+          else { deadlineText = daysLeft + 'd left'; }
+        }
+      }
+    %>
+    <div class="item-card status-<%= t.status %>">
+      <h3><%= t.task %></h3>
+      <% if (t.description) { %><p class="desc-preview"><%= t.description %></p><% } %>
+
+      <div class="badge-row">
+        <p class="tag"><%= t.status %></p>
+        <% if (deadlineText) { %><span class="deadline-chip <%= deadlineClass %>"><%= deadlineText %></span><% } %>
+      </div>
+
+      <details class="more-details">
+        <summary></summary>
+        <div class="more-content">
+          <% if (t.description) { %><p class="full-desc"><%= t.description %></p><% } %>
+          <p>Target: <%= t.targetDate ? t.targetDate.toDateString() : 'No date' %></p>
+          <% if (t.dateAchieved) { %><p>Achieved: <%= t.dateAchieved.toDateString() %></p><% } %>
+
+          <form action="/career/<%= t._id %>?_method=PUT" method="POST" class="edit-form">
+            <input type="text" name="task" value="<%= t.task %>" required>
+            <textarea name="description"><%= t.description %></textarea>
+            <input type="date" name="targetDate" value="<%= t.targetDate ? t.targetDate.toISOString().split('T')[0] : '' %>">
+            <select name="status">
+              <option value="pending" <%= t.status === 'pending' ? 'selected' : '' %>>Pending</option>
+              <option value="in-progress" <%= t.status === 'in-progress' ? 'selected' : '' %>>In Progress</option>
+              <option value="achieved" <%= t.status === 'achieved' ? 'selected' : '' %>>Achieved</option>
+              <option value="missed" <%= t.status === 'missed' ? 'selected' : '' %>>Missed</option>
+            </select>
+            <button type="submit" class="btn small">Save</button>
+          </form>
+
+          <form action="/career/<%= t._id %>?_method=DELETE" method="POST" class="delete-form">
+            <button type="submit" class="btn small danger">Delete</button>
+          </form>
+        </div>
+      </details>
+    </div>
+    <% }) %>
+  </div>
 </div>
 
-<%- include('partials/footer') %>
+<script>
+  const fab = document.getElementById('openAddModal');
+  const overlay = document.getElementById('addModalOverlay');
+  const closeBtn = document.getElementById('closeAddModal');
+
+  fab.addEventListener('click', () => overlay.classList.add('open'));
+  closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') overlay.classList.remove('open');
+  });
+</script>
+

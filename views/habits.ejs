@@ -1,44 +1,408 @@
 <%- include('partials/header') %>
 
-<h1>Habit Stopper</h1>
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-soft: #64748b;
+    --accent: #0f766e;
+    --accent-light: #ccfbf1;
+    --accent-hover: #0d5f59;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.12);
+  }
 
-<form method="GET" action="/habits" class="date-picker">
-  <label>Viewing date:</label>
-  <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
-</form>
+  * { box-sizing: border-box; }
 
-<form action="/habits" method="POST" class="form-card">
-  <h3>New Habit to Stop</h3>
-  <input type="text" name="title" placeholder="Habit (e.g. Smoking)" required>
-  <input type="number" name="targetDays" placeholder="Target days clean" required>
-  <button type="submit" class="btn">Add Habit</button>
-</form>
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
 
-<div class="list">
-  <% habits.forEach(h => {
-       const check = checksMap[h._id.toString()];
-       const progress = Math.min(100, Math.round((h.streak / h.targetDays) * 100));
-  %>
-    <div class="item-card">
-      <h3><%= h.title %></h3>
-      <p><small>Target: <%= h.targetDays %> days clean • Current streak: <strong><%= h.streak %></strong> days</small></p>
-      <div class="progress-bar"><div class="progress-fill" style="width: <%= progress %>%"></div></div>
+  .page-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 20px 100px;
+  }
 
-      <form action="/habits/<%= h._id %>/check" method="POST" class="inline-form">
-        <input type="hidden" name="date" value="<%= date %>">
-        <label class="checkbox-label">
-          <input type="checkbox" name="succeeded" <%= check && check.succeeded ? 'checked' : '' %>>
-          Stayed clean on <%= date %>
-        </label>
-        <input type="text" name="comment" placeholder="Comment / trigger notes" value="<%= check ? (check.comment || '') : '' %>">
-        <button type="submit" class="btn small">Save Check</button>
-      </form>
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 20px;
+    letter-spacing: -0.02em;
+  }
 
-      <form action="/habits/<%= h._id %>?_method=DELETE" method="POST">
-        <button type="submit" class="btn small danger">Delete Habit</button>
-      </form>
-    </div>
-  <% }) %>
+  /* Date picker */
+  .date-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+
+  .date-picker label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-soft);
+  }
+
+  .date-picker input[type="date"] {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+  }
+
+  /* Habit list */
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .item-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+
+  .item-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .item-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .item-meta {
+    font-size: 12px;
+    color: var(--text-soft);
+    margin: 2px 0 8px;
+  }
+
+  .item-meta strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #eef2f5;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+
+  .inline-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .inline-form input[type="text"] {
+    flex: 1;
+    min-width: 120px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .inline-form input[type="text"]:focus,
+  .date-picker input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+
+  /* Buttons */
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .btn:hover { background: var(--accent-hover); }
+
+  .btn.small {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-soft);
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .icon-btn:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+  }
+
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  /* Floating add button */
+  .fab {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    z-index: 40;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  .fab:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 20px;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal-card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 24px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-card h3 {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .modal-sub {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin: 0 0 18px;
+  }
+
+  .modal-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-card label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin-bottom: -6px;
+  }
+
+  .modal-card input[type="text"],
+  .modal-card input[type="number"] {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .modal-card input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .btn.ghost {
+    background: transparent;
+    color: var(--text-soft);
+    border: 1px solid var(--border);
+  }
+
+  .btn.ghost:hover {
+    background: #f1f5f9;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 14px;
+    padding: 40px 0;
+  }
+</style>
+
+<div class="page-wrap">
+  <h1>Habit Stopper</h1>
+
+  <form method="GET" action="/habits" class="date-picker">
+    <label>Viewing date:</label>
+    <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
+  </form>
+
+  <div class="list">
+    <% if (habits.length === 0) { %>
+      <div class="empty-state">No habits yet — tap the + button to add one.</div>
+    <% } %>
+
+    <% habits.forEach(h => {
+         const check = checksMap[h._id.toString()];
+         const progress = Math.min(100, Math.round((h.streak / h.targetDays) * 100));
+    %>
+      <div class="item-card">
+        <div class="item-card-top">
+          <h3><%= h.title %></h3>
+          <form action="/habits/<%= h._id %>?_method=DELETE" method="POST">
+            <button type="submit" class="icon-btn" title="Delete habit">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </form>
+        </div>
+
+        <p class="item-meta">Target: <%= h.targetDays %> days clean • Streak: <strong><%= h.streak %></strong> days</p>
+
+        <div class="progress-bar"><div class="progress-fill" style="width: <%= progress %>%"></div></div>
+
+        <form action="/habits/<%= h._id %>/check" method="POST" class="inline-form">
+          <input type="hidden" name="date" value="<%= date %>">
+          <label class="checkbox-label">
+            <input type="checkbox" name="succeeded" <%= check && check.succeeded ? 'checked' : '' %>>
+            Stayed clean
+          </label>
+          <input type="text" name="comment" placeholder="Comment / trigger notes" value="<%= check ? (check.comment || '') : '' %>">
+          <button type="submit" class="btn small">Save</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
 </div>
 
-<%- include('partials/footer') %>
+<!-- Floating add button -->
+<button class="fab" onclick="document.getElementById('addHabitModal').classList.add('open')" title="Add habit">+</button>
+
+<!-- Add habit modal -->
+<div class="modal-overlay" id="addHabitModal" onclick="if(event.target === this) this.classList.remove('open')">
+  <div class="modal-card">
+    <h3>New Habit to Stop</h3>
+    <p class="modal-sub">Set a target and start tracking your streak.</p>
+    <form action="/habits" method="POST">
+      <label>Habit name</label>
+      <input type="text" name="title" placeholder="e.g. Smoking" required>
+
+      <label>Target days clean</label>
+      <input type="number" name="targetDays" placeholder="e.g. 30" required min="1">
+
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" onclick="document.getElementById('addHabitModal').classList.remove('open')">Cancel</button>
+        <button type="submit" class="btn">Add Habit</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      document.getElementById('addHabitModal').classList.remove('open');
+    }
+  });
+</script>

@@ -1,42 +1,413 @@
 <%- include('partials/header') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 
+</head>
+<style>
+  :root {
+  --bg: #f7f8fa;
+  --card-bg: #ffffff;
+  --border: #e4e7eb;
+  --text: #1f2430;
+  --text-muted: #6b7280;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --success: #16a34a;
+  --success-bg: #f0fdf4;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
 
-<h1>Rules - Daily Check</h1>
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
 
-<form method="GET" action="/rules" class="date-picker">
-  <label>Viewing date:</label>
-  <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
-</form>
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
 
-<form action="/rules" method="POST" class="form-card">
-  <h3>New Rule</h3>
-  <input type="text" name="title" placeholder="Rule title" required>
-  <textarea name="description" placeholder="Description"></textarea>
-  <button type="submit" class="btn">Add Rule</button>
-</form>
+.page-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.date-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.date-picker input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  background: var(--card-bg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 800px;
+  margin: 0 auto 100px;
+}
+
+.item-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  transition: box-shadow 0.2s ease;
+}
+
+.item-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rule-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+.link-btn:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.week-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.day-form {
+  display: contents;
+}
+
+.day-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  min-width: 38px;
+  transition: all 0.15s ease;
+}
+
+.day-check.today {
+  border-color: var(--accent);
+}
+
+.day-check.checked-day {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.day-check input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--success);
+  cursor: pointer;
+}
+
+/* Hidden extra section (description, comment, delete) */
+.extra {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin-top 0.25s ease;
+}
+
+.item-card.expanded .extra {
+  max-height: 300px;
+  opacity: 1;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.rule-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 10px;
+}
+
+.comment-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.comment-form input[type="text"] {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 0.85rem;
+}
+
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.rule-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 6px 0 0;
+}
+
+.btn:hover {
+  background: var(--accent-hover);
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+.btn.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid #fecaca;
+}
+
+.btn.danger:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* Floating Add button */
+.fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.6rem;
+  border: none;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.fab:hover {
+  background: var(--accent-hover);
+  transform: scale(1.06);
+}
+
+/* Modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-overlay.open {
+  display: flex;
+}
+
+.modal {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  width: 90%;
+  max-width: 420px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-form input,
+.modal-form textarea {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.modal-form textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .list {
+    margin: 0 0 100px;
+  }
+  .week-row {
+    justify-content: space-between;
+  }
+  .day-check {
+    min-width: 30px;
+    padding: 5px 4px;
+    font-size: 0.65rem;
+  }
+  .fab {
+    bottom: 20px;
+    right: 20px;
+  }
+}
+</style>
+<body>
+  
+
+<div class="page-header">
+  <h1>Rules - Daily Check</h1>
+
+  <form method="GET" action="/rules" class="date-picker">
+    <label>Viewing week of:</label>
+    <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
+  </form>
+</div>
 
 <div class="list">
   <% rules.forEach(r => {
-       const check = checksMap[r._id.toString()];
+       const ruleId = r._id.toString();
+       const ruleChecks = checksMap[ruleId] || {};
   %>
-    <div class="item-card <%= check && check.followed ? 'success' : '' %>">
-      <h3><%= r.title %></h3>
-      <% if (r.description) { %><p><%= r.description %></p><% } %>
+    
+<div class="item-card">
 
-      <form action="/rules/<%= r._id %>/check" method="POST" class="inline-form">
-        <input type="hidden" name="date" value="<%= date %>">
-        <label class="checkbox-label">
+  <div class="card-top">
+    <h3 class="rule-title"><%= r.title %></h3>
+    <button type="button" class="link-btn toggle-more" onclick="this.closest('.item-card').classList.toggle('expanded'); this.textContent = this.closest('.item-card').classList.contains('expanded') ? 'View less' : 'View more';">View more</button>
+  </div>
+
+  <% if (r.description) { %><p class="rule-desc"><%= r.description %></p><% } %>
+
+  <div class="week-row">
+    <% weekDates.forEach(d => {
+         const check = ruleChecks[d.date];
+    %>
+      <form action="/rules/<%= r._id %>/check" method="POST" class="day-form">
+        <input type="hidden" name="date" value="<%= d.date %>">
+        <label class="day-check <%= d.isToday ? 'today' : '' %> <%= check && check.followed ? 'checked-day' : '' %>">
           <input type="checkbox" name="followed" <%= check && check.followed ? 'checked' : '' %> onchange="this.form.submit()">
-          Followed this rule on <%= date %>
+          <span><%= d.label %></span>
         </label>
-        <input type="text" name="comment" placeholder="Comment" value="<%= check ? (check.comment || '') : '' %>">
-        <button type="submit" class="btn small">Save Check</button>
       </form>
+    <% }) %>
+  </div>
 
-      <form action="/rules/<%= r._id %>?_method=DELETE" method="POST">
-        <button type="submit" class="btn small danger">Delete Rule</button>
-      </form>
-    </div>
+  <div class="extra">
+    <form action="/rules/<%= r._id %>/check" method="POST" class="comment-form">
+      <input type="hidden" name="date" value="<%= date %>">
+      <input type="hidden" name="followed" value="<%= ruleChecks[date] && ruleChecks[date].followed ? 'on' : '' %>">
+      <input type="text" name="comment" placeholder="Comment" value="<%= ruleChecks[date] ? (ruleChecks[date].comment || '') : '' %>">
+      <button type="submit" class="btn small">Save Comment</button>
+    </form>
+
+    <form action="/rules/<%= r._id %>?_method=DELETE" method="POST" class="delete-form">
+      <button type="submit" class="btn small danger">Delete Rule</button>
+    </form>
+  </div>
+
+</div>
+      
   <% }) %>
 </div>
 
-<%- include('partials/footer') %>
+<!-- Floating Add Rule button -->
+<button type="button" class="fab" onclick="document.getElementById('addRuleModal').classList.add('open')" aria-label="Add rule">+</button>
+
+<div class="modal-overlay" id="addRuleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>New Rule</h3>
+      <button type="button" class="close-btn" onclick="document.getElementById('addRuleModal').classList.remove('open')">&times;</button>
+    </div>
+    <form action="/rules" method="POST" class="modal-form">
+      <input type="text" name="title" placeholder="Rule title" required>
+      <textarea name="description" placeholder="Description"></textarea>
+      <button type="submit" class="btn">Add Rule</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

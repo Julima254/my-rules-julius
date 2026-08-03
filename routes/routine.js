@@ -6,30 +6,49 @@ function todayStr() {
   return new Date().toISOString().split('T')[0];
 }
 
+function formatTime(timeStr) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, '0')}${period.toLowerCase()}`;
+}
+
 router.get('/', async (req, res) => {
   const date = req.query.date || todayStr();
   const slots = await RoutineSlot.find().sort({ hour: 1 });
   const checks = await RoutineCheck.find({ date });
 
   const checksMap = {};
-  checks.forEach(c => { checksMap[c.slot.toString()] = c.done; });
+  checks.forEach(c => {
+    checksMap[c.slot.toString()] = {
+      done: c.done,
+      comment: c.comment || '',
+      task: c.task || ''
+    };
+  });
 
-  res.render('routine', { slots, checksMap, date });
+  const formattedSlots = slots.map(s => ({
+    ...s.toObject(),
+    hourLabel: `${formatTime(s.hour)} - ${formatTime(s.endHour)}`
+  }));
+
+  res.render('routine', { slots: formattedSlots, checksMap, date });
 });
 
 router.post('/', async (req, res) => {
-  const { hour, task } = req.body;
-  await RoutineSlot.create({ hour, task });
+  const { hour, endHour, task } = req.body;
+  await RoutineSlot.create({ hour, endHour, task });
   res.redirect('/routine');
 });
 
 router.post('/:id/check', async (req, res) => {
-  const { date, done } = req.body;
+  const { date, done, comment, task } = req.body;
   const checkDate = date || todayStr();
 
   await RoutineCheck.findOneAndUpdate(
     { slot: req.params.id, date: checkDate },
-    { done: done === 'on' },
+    { done: done === 'on', comment: comment || '', task: task || '' },
     { upsert: true }
   );
   res.redirect('/routine?date=' + checkDate);

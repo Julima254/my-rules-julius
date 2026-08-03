@@ -1,55 +1,449 @@
 <%- include('partials/header') %>
 
-<h1>Achievements</h1>
+<div class="ach-page">
+  <div class="ach-topbar">
+    <h1>Achievements</h1>
+  </div>
 
-<form action="/achievements" method="POST" class="form-card">
-  <h3>New Achievement</h3>
-  <input type="text" name="title" placeholder="Achievement title" required>
-  <textarea name="description" placeholder="Description"></textarea>
-  <label>Target date</label>
-  <input type="date" name="targetDate">
-  <button type="submit" class="btn">Add Achievement</button>
-</form>
-
-<div class="list">
-  <% achievements.forEach(a => { %>
-    <div class="item-card <%= a.dateAchieved ? 'success' : (a.dateFailed ? 'failed' : '') %>">
-      <h3><%= a.title %></h3>
-      <% if (a.description) { %><p><%= a.description %></p><% } %>
-      <p><small>Target: <%= a.targetDate ? a.targetDate.toDateString() : 'No date set' %></small></p>
-
-      <% if (a.dateAchieved) { %>
-        <p class="tag success">✅ Achieved on <%= a.dateAchieved.toDateString() %></p>
-      <% } else if (a.dateFailed) { %>
-        <p class="tag failed">❌ Failed on <%= a.dateFailed.toDateString() %></p>
-      <% } else { %>
-        <p class="tag pending">⏳ Pending</p>
-      <% } %>
-
-      <form action="/achievements/<%= a._id %>?_method=PUT" method="POST">
-  <input type="text" name="title" value="<%= a.title %>" required>
-  <textarea name="description"><%= a.description %></textarea>
-  <input type="date" name="targetDate" value="<%= a.targetDate ? a.targetDate.toISOString().split('T')[0] : '' %>">
-  <textarea name="notes" placeholder="Notes"><%= a.notes || '' %></textarea>
-  <button type="submit" class="btn small">Save</button>
-</form>
-
-      <div class="action-row">
-        <form action="/achievements/<%= a._id %>/achieve?_method=PUT" method="POST">
-          <button type="submit" class="btn small success">Mark Achieved</button>
-        </form>
-        <form action="/achievements/<%= a._id %>/fail?_method=PUT" method="POST">
-          <button type="submit" class="btn small failed">Mark Failed</button>
-        </form>
-        <form action="/achievements/<%= a._id %>/reset?_method=PUT" method="POST">
-          <button type="submit" class="btn small">Reset</button>
-        </form>
-        <form action="/achievements/<%= a._id %>?_method=DELETE" method="POST">
-          <button type="submit" class="btn small danger">Delete</button>
-        </form>
-      </div>
+  <% if (!achievements || achievements.length === 0) { %>
+    <div class="empty-state">
+      <p>No achievements yet. Click the <strong>+</strong> button to add your first one.</p>
     </div>
-  <% }) %>
+  <% } %>
+
+  <div class="list">
+    <% achievements.forEach(a => { %>
+      <div class="item-card <%= a.dateAchieved ? 'success' : (a.dateFailed ? 'failed' : 'pending') %>">
+
+        <div class="card-header">
+          <h3><%= a.title %></h3>
+          <% if (a.dateAchieved) { %>
+            <span class="tag success">✅ Achieved</span>
+          <% } else if (a.dateFailed) { %>
+            <span class="tag failed">❌ Failed</span>
+          <% } else { %>
+            <span class="tag pending">⏳ Pending</span>
+          <% } %>
+        </div>
+
+        <% if (a.description) { %><p class="desc"><%= a.description %></p><% } %>
+
+        <div class="meta-row">
+          <span class="meta-item">
+            🎯 <%= a.targetDate ? a.targetDate.toDateString() : 'No date set' %>
+          </span>
+          <% if (a.dateAchieved) { %>
+            <span class="meta-item">on <%= a.dateAchieved.toDateString() %></span>
+          <% } else if (a.dateFailed) { %>
+            <span class="meta-item">on <%= a.dateFailed.toDateString() %></span>
+          <% } %>
+        </div>
+
+        <% if (a.notes) { %>
+          <p class="notes">📝 <%= a.notes %></p>
+        <% } %>
+
+        <button type="button" class="btn small edit-toggle" onclick="toggleEdit('<%= a._id %>')">
+          Edit
+        </button>
+
+        <div class="edit-panel" id="edit-panel-<%= a._id %>">
+
+          <form action="/achievements/<%= a._id %>?_method=PUT" method="POST" class="edit-form">
+            <label>Title</label>
+            <input type="text" name="title" value="<%= a.title %>" required>
+
+            <label>Description</label>
+            <textarea name="description"><%= a.description %></textarea>
+
+            <label>Target date</label>
+            <input type="date" name="targetDate" value="<%= a.targetDate ? a.targetDate.toISOString().split('T')[0] : '' %>">
+
+            <label>Notes</label>
+            <textarea name="notes" placeholder="Notes"><%= a.notes || '' %></textarea>
+
+            <button type="submit" class="btn small primary">Save Changes</button>
+          </form>
+
+          <div class="action-row">
+            <form action="/achievements/<%= a._id %>/achieve?_method=PUT" method="POST">
+              <button type="submit" class="btn small success">Mark Achieved</button>
+            </form>
+            <form action="/achievements/<%= a._id %>/fail?_method=PUT" method="POST">
+              <button type="submit" class="btn small failed">Mark Failed</button>
+            </form>
+            <form action="/achievements/<%= a._id %>/reset?_method=PUT" method="POST">
+              <button type="submit" class="btn small">Reset</button>
+            </form>
+            <form action="/achievements/<%= a._id %>?_method=DELETE" method="POST">
+              <button type="submit" class="btn small danger">Delete</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    <% }) %>
+  </div>
 </div>
 
-<%- include('partials/footer') %>
+<!-- Floating Add Button -->
+<button type="button" class="fab" onclick="toggleModal(true)" title="Add new achievement">+</button>
+
+<!-- Add Achievement Modal -->
+<div class="modal-overlay" id="add-modal-overlay" onclick="closeIfOverlay(event)">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>New Achievement</h3>
+      <button type="button" class="modal-close" onclick="toggleModal(false)">&times;</button>
+    </div>
+    <form action="/achievements" method="POST" class="form-card">
+      <label>Title</label>
+      <input type="text" name="title" placeholder="Achievement title" required>
+
+      <label>Description</label>
+      <textarea name="description" placeholder="Description"></textarea>
+
+      <label>Target date</label>
+      <input type="date" name="targetDate">
+
+      <button type="submit" class="btn primary full-width">Add Achievement</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-main: #1f2933;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #3b82f6;
+    --accent-dark: #2563eb;
+    --success: #16a34a;
+    --success-bg: #ecfdf5;
+    --failed: #dc2626;
+    --failed-bg: #fef2f2;
+    --pending: #d97706;
+    --pending-bg: #fffbeb;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.10);
+  }
+
+  .ach-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px 100px;
+  }
+
+  .ach-topbar h1 {
+    font-size: 1.6rem;
+    color: var(--text-main);
+    margin-bottom: 20px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    background: var(--card-bg);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+
+  /* Grid of cards */
+  .list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .item-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--pending);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .item-card:hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  .item-card.success { border-left-color: var(--success); }
+  .item-card.failed  { border-left-color: var(--failed); }
+  .item-card.pending { border-left-color: var(--pending); }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .card-header h3 {
+    font-size: 1.02rem;
+    color: var(--text-main);
+    margin: 0;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  .desc {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .notes {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 6px 8px;
+    margin: 0;
+  }
+
+  /* Status tag */
+  .tag {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .tag.success { color: var(--success); background: var(--success-bg); }
+  .tag.failed  { color: var(--failed);  background: var(--failed-bg); }
+  .tag.pending { color: var(--pending); background: var(--pending-bg); }
+
+  /* Buttons */
+  .btn {
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: var(--border);
+    color: var(--text-main);
+    transition: opacity 0.15s ease, transform 0.05s ease;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+
+  .btn.small { padding: 6px 10px; font-size: 0.8rem; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-dark); }
+  .btn.success { background: var(--success); color: #fff; }
+  .btn.failed { background: var(--failed); color: #fff; }
+  .btn.danger { background: var(--failed); color: #fff; }
+  .btn.full-width { width: 100%; margin-top: 6px; }
+
+  .edit-toggle {
+    align-self: flex-start;
+    background: var(--bg);
+    color: var(--accent-dark);
+    font-weight: 500;
+  }
+  .edit-toggle:hover { background: #e8edf5; }
+
+  /* Collapsible edit panel */
+  .edit-panel {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .edit-panel.open { display: flex; }
+
+  .edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .edit-form label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+  .edit-form input,
+  .edit-form textarea,
+  .form-card input,
+  .form-card textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: var(--bg);
+    color: var(--text-main);
+  }
+  .edit-form textarea,
+  .form-card textarea {
+    min-height: 60px;
+    resize: vertical;
+  }
+  .edit-form input:focus,
+  .edit-form textarea:focus,
+  .form-card input:focus,
+  .form-card textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  .action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .action-row form { margin: 0; }
+
+  /* Floating Add Button */
+  .fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 1.8rem;
+    line-height: 1;
+    border: none;
+    box-shadow: 0 4px 14px rgba(59,130,246,0.4);
+    cursor: pointer;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .fab:hover { background: var(--accent-dark); transform: translateY(-2px); }
+  .fab:active { transform: scale(0.95); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+    animation: modalPop 0.15s ease;
+  }
+
+  @keyframes modalPop {
+    from { transform: scale(0.96); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .modal-header h3 {
+    margin: 0;
+    color: var(--text-main);
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+  .modal-close:hover { color: var(--text-main); }
+
+  .form-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .form-card label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Responsive tweaks */
+  @media (max-width: 600px) {
+    .fab {
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      font-size: 1.6rem;
+    }
+    .ach-page { padding-bottom: 90px; }
+    .action-row { gap: 6px; }
+    .action-row .btn.small { flex: 1 1 auto; text-align: center; }
+  }
+</style>
+
+<script>
+  function toggleModal(show) {
+    const overlay = document.getElementById('add-modal-overlay');
+    if (show) {
+      overlay.classList.add('open');
+    } else {
+      overlay.classList.remove('open');
+    }
+  }
+
+  function closeIfOverlay(event) {
+    if (event.target.id === 'add-modal-overlay') {
+      toggleModal(false);
+    }
+  }
+
+  function toggleEdit(id) {
+    const panel = document.getElementById('edit-panel-' + id);
+    if (panel) {
+      panel.classList.toggle('open');
+    }
+  }
+
+  // Close modal with Escape key
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      toggleModal(false);
+    }
+  });
+</script>

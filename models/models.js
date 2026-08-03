@@ -36,18 +36,23 @@ const careerSchema = new Schema({
   status: { type: String, enum: ['pending', 'in-progress', 'achieved', 'missed'], default: 'pending' }
 }, { timestamps: true });
 
+
 // 4. Daily Routine (hourly tasks) + checks per day
 const routineSlotSchema = new Schema({
-  hour: { type: String, required: true }, // e.g. "06:00"
-  task: { type: String, required: true }
+  hour: { type: String, required: true },     // start time, e.g. "06:00"
+  endHour: { type: String, required: true },  // end time, e.g. "07:30"
+  task: { type: String, required: true }      // default/original task
 });
 
 const routineCheckSchema = new Schema({
   slot: { type: Schema.Types.ObjectId, ref: 'RoutineSlot', required: true },
   date: { type: String, required: true },
-  done: { type: Boolean, default: false }
+  done: { type: Boolean, default: false },
+  comment: String,
+  task: String   // optional per-date override of the task; falls back to slot.task if empty
 });
 routineCheckSchema.index({ slot: 1, date: 1 }, { unique: true });
+
 
 // 5. Theme of the Year
 const themeOfYearSchema = new Schema({
