@@ -81,10 +81,12 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     margin-bottom: 0;
+    border-width: 0;
   }
   .add-panel.open {
-    max-height: 220px;
+    max-height: 260px;
     margin-bottom: 20px;
+    border-width: 1px;
   }
   .add-panel-inner {
     padding: 16px 20px;
@@ -121,7 +123,7 @@
   .field-task { flex: 1; min-width: 200px; }
   .field-task input { width: 100%; }
 
-  /* Table-style list */
+  /* List */
   .list {
     display: flex;
     flex-direction: column;
@@ -130,7 +132,7 @@
 
   .routine-row {
     display: grid;
-    grid-template-columns: 190px 1fr 260px;
+    grid-template-columns: 250px 1fr 260px;
     align-items: center;
     gap: 16px;
     background: var(--card-bg);
@@ -144,25 +146,49 @@
     border-color: var(--success-border);
   }
 
-  /* Left: time */
+  /* Left: editable time */
   .col-time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #eef2ff;
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
+  .col-time span {
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .col-time input[type="time"] {
+    border: 1px solid transparent;
+    background: transparent;
     font-size: 13px;
     font-weight: 600;
     color: var(--primary);
-    background: #eef2ff;
+    padding: 3px 4px;
     border-radius: 6px;
-    padding: 6px 10px;
-    text-align: center;
-    white-space: nowrap;
+    width: 100%;
+    min-width: 0;
   }
-  .success .col-time {
-    color: var(--success-text);
-    background: #dcfce7;
+  .col-time input[type="time"]:hover { background: rgba(255,255,255,0.6); }
+  .col-time input[type="time"]:focus {
+    outline: none;
+    border-color: var(--border);
+    background: #fff;
   }
+  .success .col-time { background: #dcfce7; }
+  .success .col-time span,
+  .success .col-time input[type="time"] { color: var(--success-text); }
 
   /* Center: editable task */
+  .col-task {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .col-task input[type="text"] {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     border: 1px solid transparent;
     background: transparent;
     font-size: 14px;
@@ -172,9 +198,7 @@
     border-radius: 6px;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
-  .col-task input[type="text"]:hover {
-    background: #fafbfc;
-  }
+  .col-task input[type="text"]:hover { background: #fafbfc; }
   .col-task input[type="text"]:focus {
     outline: none;
     border-color: var(--border);
@@ -271,17 +295,17 @@
   .btn-danger:hover { background: var(--danger); color: #fff; }
 
   /* Responsive */
-  @media (max-width: 800px) {
+  @media (max-width: 900px) {
     .routine-row {
       grid-template-columns: 1fr;
       gap: 10px;
     }
-    .col-time { text-align: left; width: fit-content; }
     .col-actions { align-items: stretch; }
     .actions-top { justify-content: space-between; }
     .comment-preview { max-width: none; }
     .add-form-row { flex-direction: column; align-items: stretch; }
     .field-task { min-width: 0; }
+    .add-panel.open { max-height: 400px; }
   }
 
   @media (max-width: 480px) {
@@ -305,6 +329,7 @@
     <div class="add-panel-inner">
       <h3>New Time Slot</h3>
       <form action="/routine" method="POST" class="add-form-row">
+        <input type="hidden" name="date" value="<%= date %>">
         <div class="field">
           <label>Start</label>
           <input type="time" name="hour" required>
@@ -324,23 +349,30 @@
 
   <div class="list">
     <% slots.forEach(s => {
-         const check = checksMap[s._id.toString()] || { done: false, comment: '', task: '' };
-         const taskValue = check.task || s.task;
+         const check = checksMap[s._id.toString()] || { done: false, comment: '' };
          const rowId = s._id.toString();
     %>
       <div class="routine-row <%= check.done ? 'success' : '' %>">
-        <div class="col-time"><%= s.hourLabel %></div>
+
+        <!-- Permanent slot edit form (inputs below attach to it via form="...") -->
+        <form id="slot-form-<%= rowId %>" action="/routine/<%= rowId %>/edit" method="POST">
+          <input type="hidden" name="date" value="<%= date %>">
+        </form>
+
+        <!-- Done/comment form for this date -->
+        <form id="check-form-<%= rowId %>" action="/routine/<%= rowId %>/check" method="POST">
+          <input type="hidden" name="date" value="<%= date %>">
+        </form>
+
+        <div class="col-time">
+          <input type="time" name="hour" value="<%= s.hour %>" form="slot-form-<%= rowId %>" required>
+          <span>–</span>
+          <input type="time" name="endHour" value="<%= s.endHour %>" form="slot-form-<%= rowId %>" required>
+        </div>
 
         <div class="col-task">
-          <form id="check-form-<%= rowId %>" action="/routine/<%= s._id %>/check" method="POST">
-            <input type="hidden" name="date" value="<%= date %>">
-            <input
-              type="text"
-              name="task"
-              value="<%= taskValue %>"
-              form="check-form-<%= rowId %>"
-            >
-          </form>
+          <input type="text" name="task" value="<%= s.task %>" form="slot-form-<%= rowId %>" required>
+          <button type="submit" form="slot-form-<%= rowId %>" class="btn btn-save">Save</button>
         </div>
 
         <div class="col-actions">
@@ -372,7 +404,8 @@
             >
             <div class="more-panel-buttons">
               <button type="submit" form="check-form-<%= rowId %>" class="btn btn-save">Save</button>
-              <form action="/routine/<%= s._id %>?_method=DELETE" method="POST">
+              <form action="/routine/<%= rowId %>?_method=DELETE&date=<%= date %>" method="POST"
+                    onsubmit="return confirm('Delete this slot permanently?')">
                 <button type="submit" class="btn btn-danger">Delete</button>
               </form>
             </div>
