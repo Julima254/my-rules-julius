@@ -1,427 +1,321 @@
 <%- include('partials/header') %>
-
-<style>
-  .routine-page {
-    --bg: #f5f6f8;
-    --card-bg: #ffffff;
-    --border: #e2e5ea;
-    --text: #1f2430;
-    --text-muted: #6b7280;
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --success-bg: #f0fdf4;
-    --success-border: #bbf7d0;
-    --success-text: #15803d;
-    --danger: #dc2626;
-    --radius: 8px;
-
-    box-sizing: border-box;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    width: 100%;
-    min-height: 100vh;
-    padding: 24px 32px 60px;
-  }
-
-  .routine-page *, .routine-page *::before, .routine-page *::after {
-    box-sizing: border-box;
-  }
-
-  .routine-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .routine-top h1 {
-    font-size: 22px;
-    font-weight: 600;
-    margin: 0;
-  }
-
-  .date-picker {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--text-muted);
-  }
-
-  .date-picker input[type="date"] {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 6px 10px;
-    font-size: 14px;
-    background: var(--card-bg);
-  }
-
-  .add-btn {
-    border: none;
-    border-radius: var(--radius);
-    background: var(--primary);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 9px 16px;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-  .add-btn:hover { background: var(--primary-hover); }
-
-  /* Add slot panel */
-  .add-panel {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.2s ease;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 0;
-    border-width: 0;
-  }
-  .add-panel.open {
-    max-height: 260px;
-    margin-bottom: 20px;
-    border-width: 1px;
-  }
-  .add-panel-inner {
-    padding: 16px 20px;
-  }
-  .add-panel h3 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin: 0 0 12px;
-  }
-  .add-form-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .field label {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-  .field input {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 8px 10px;
-    font-size: 14px;
-  }
-  .field-task { flex: 1; min-width: 200px; }
-  .field-task input { width: 100%; }
-
-  /* List */
-  .list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .routine-row {
-    display: grid;
-    grid-template-columns: 250px 1fr 260px;
-    align-items: center;
-    gap: 16px;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 16px;
-  }
-
-  .routine-row.success {
-    background: var(--success-bg);
-    border-color: var(--success-border);
-  }
-
-  /* Left: editable time */
-  .col-time {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #eef2ff;
-    border-radius: 6px;
-    padding: 6px 8px;
-  }
-  .col-time span {
-    color: var(--primary);
-    font-weight: 600;
-  }
-  .col-time input[type="time"] {
-    border: 1px solid transparent;
-    background: transparent;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--primary);
-    padding: 3px 4px;
-    border-radius: 6px;
-    width: 100%;
-    min-width: 0;
-  }
-  .col-time input[type="time"]:hover { background: rgba(255,255,255,0.6); }
-  .col-time input[type="time"]:focus {
-    outline: none;
-    border-color: var(--border);
-    background: #fff;
-  }
-  .success .col-time { background: #dcfce7; }
-  .success .col-time span,
-  .success .col-time input[type="time"] { color: var(--success-text); }
-
-  /* Center: editable task */
-  .col-task {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .col-task input[type="text"] {
-    flex: 1;
-    min-width: 0;
-    border: 1px solid transparent;
-    background: transparent;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-    padding: 6px 8px;
-    border-radius: 6px;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .col-task input[type="text"]:hover { background: #fafbfc; }
-  .col-task input[type="text"]:focus {
-    outline: none;
-    border-color: var(--border);
-    background: #fff;
-  }
-
-  /* Right: check + comment + more */
-  .col-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-end;
-  }
-
-  .actions-top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--text-muted);
-    white-space: nowrap;
-  }
-
-  .comment-preview {
-    font-size: 12px;
-    color: var(--text-muted);
-    font-style: italic;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .more-toggle {
-    border: none;
-    background: none;
-    color: var(--primary);
-    font-size: 12px;
-    cursor: pointer;
-    padding: 2px 4px;
-  }
-  .more-toggle:hover { text-decoration: underline; }
-
-  .more-panel {
-    display: none;
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    margin-top: 4px;
-  }
-  .more-panel.open { display: flex; }
-
-  .comment-input {
-    width: 100%;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 7px 10px;
-    font-size: 13px;
-  }
-
-  .more-panel-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .btn {
-    border: none;
-    border-radius: var(--radius);
-    padding: 7px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-  .btn-save {
-    background: #eef2ff;
-    color: var(--primary);
-    border: 1px solid #c7d2fe;
-  }
-  .btn-save:hover { background: #e0e7ff; }
-  .btn-danger {
-    background: #fff;
-    color: var(--danger);
-    border: 1px solid #fca5a5;
-  }
-  .btn-danger:hover { background: var(--danger); color: #fff; }
-
-  /* Responsive */
-  @media (max-width: 900px) {
-    .routine-row {
-      grid-template-columns: 1fr;
-      gap: 10px;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daily Routine Timetable</title>
+  <style>
+    :root {
+      --blue: #1597d4;
+      --ink: #0d3b4a;
+      --line: #14586b;
+      --orange: #f6a21e;
+      --cream: #fde6bb;
+      --sky: #dbe8f6;
+      --green: #7fdc8a;
+      --yellow: #fff200;
+      --black: #0a0a0a;
+      --col: 132px;
     }
-    .col-actions { align-items: stretch; }
-    .actions-top { justify-content: space-between; }
-    .comment-preview { max-width: none; }
-    .add-form-row { flex-direction: column; align-items: stretch; }
-    .field-task { min-width: 0; }
-    .add-panel.open { max-height: 400px; }
-  }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 18px 14px 40px;
+      font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+      background: #eef3f6; color: var(--ink);
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; }
 
-  @media (max-width: 480px) {
-    .routine-page { padding: 16px; }
-  }
-</style>
+    h1 {
+      margin: 0 0 10px; text-align: center;
+      font-family: Impact, "Arial Black", sans-serif; font-weight: 900;
+      font-size: clamp(26px, 5vw, 44px); letter-spacing: .5px;
+      color: var(--blue);
+      text-shadow: 2px 2px 0 #fff, 3px 3px 0 rgba(0,0,0,.12);
+    }
 
-<div class="routine-page">
-  <div class="routine-top">
-    <h1>Daily Routine</h1>
+    .datebar {
+      display: flex; flex-wrap: wrap; gap: 10px 18px;
+      align-items: center; justify-content: space-between;
+      margin-bottom: 12px; font-weight: 700;
+    }
+    .datebar form { display: flex; gap: 8px; align-items: center; margin: 0; }
+    .datebar input[type=date] {
+      font: inherit; padding: 5px 8px; border: 2px solid var(--line);
+      border-radius: 6px; background: #fff; color: var(--ink);
+    }
+    .btn {
+      font: inherit; font-weight: 700; cursor: pointer;
+      border: 2px solid var(--line); background: #fff; color: var(--ink);
+      padding: 6px 12px; border-radius: 6px; text-decoration: none;
+    }
+    .btn:hover { background: var(--cream); }
+    .btn:focus-visible, input:focus-visible, button:focus-visible, a:focus-visible {
+      outline: 3px solid var(--blue); outline-offset: 2px;
+    }
+    .btn.primary { background: var(--ink); color: #fff; }
+    .btn.primary:hover { background: #0a2d39; }
+    .btn.danger { border-color: #b3261e; color: #b3261e; }
+    .btn.danger:hover { background: #fde8e6; }
 
-    <form method="GET" action="/routine" class="date-picker">
-      <label>Viewing date:</label>
-      <input type="date" name="date" value="<%= date %>" onchange="this.form.submit()">
+    .scroll {
+      overflow-x: auto; border: 4px solid var(--line);
+      border-radius: 10px; background: #fff;
+    }
+    table.tt { border-collapse: collapse; width: 100%; table-layout: fixed; }
+    .tt th, .tt td { border: 2px solid var(--line); padding: 0; vertical-align: middle; }
+
+    .tt thead th {
+      background: var(--black); color: #fff; height: 56px;
+      font-size: 15px; font-weight: 700; line-height: 1.25; width: var(--col);
+    }
+    .tt thead th.corner { width: 150px; }
+    .tt thead th.corner span {
+      display: inline-block; padding: 6px 12px; border-radius: 999px;
+      background: var(--blue); font-family: Impact, "Arial Black", sans-serif;
+      letter-spacing: 1px;
+    }
+    .tt thead th.addhead { width: 86px; }
+    .slothead { cursor: pointer; }
+    .slothead:hover, .slothead:focus-visible { background: #26363d; }
+    .slothead .to { display: block; border-top: 1px solid #777; margin-top: 3px; padding-top: 3px; }
+
+    td.day {
+      width: 92px; background: var(--orange); text-align: center;
+      font-family: Impact, "Arial Black", sans-serif; font-size: 24px;
+      letter-spacing: 1px; color: #7a1c10;
+    }
+    td.day small {
+      display: block; font-family: "Trebuchet MS", Arial, sans-serif;
+      font-size: 13px; letter-spacing: 0; color: var(--ink); margin-top: 4px;
+    }
+    td.lab {
+      width: 58px; text-align: center; font-size: 12px; font-weight: 700;
+      background: #fff; color: var(--ink);
+    }
+
+    td.task { background: var(--cream); height: 92px; }
+    td.done { background: var(--sky); height: 46px; text-align: center; }
+    td.note { background: var(--green); height: 54px; }
+
+    td.task button.cell {
+      all: unset; box-sizing: border-box; display: flex; width: 100%; height: 100%;
+      align-items: center; justify-content: center; text-align: center;
+      padding: 8px; font-weight: 700; font-size: 15px; line-height: 1.2;
+      cursor: pointer; overflow-wrap: anywhere;
+    }
+    td.task button.cell:hover { background: rgba(255,255,255,.45); }
+    td.task button.cell:focus-visible { outline: 3px solid var(--blue); outline-offset: -3px; }
+    td.task.finished button.cell { text-decoration: line-through; opacity: .55; }
+
+    td.done input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--ink); cursor: pointer; }
+    td.note input[type=text] {
+      width: 100%; height: 100%; border: 0; background: transparent;
+      padding: 6px 8px; font: inherit; font-size: 13px; color: var(--ink);
+    }
+    td.note input[type=text]::placeholder { color: #2f6f3b; }
+    td.note input[type=text]:focus { background: rgba(255,255,255,.5); outline: none; }
+    td.note.saved { background: #a8f0b1; }
+
+    td.addcol { background: var(--yellow); text-align: center; }
+    td.addcol button {
+      all: unset; cursor: pointer; width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-family: Impact, "Arial Black", sans-serif; font-size: 44px; line-height: 1;
+      color: var(--ink);
+    }
+    td.addcol button span { font-size: 13px; font-family: "Trebuchet MS", Arial, sans-serif; font-weight: 700; margin-top: 4px; }
+    td.addcol button:hover { background: #fff77a; }
+    td.addcol button:focus-visible { outline: 3px solid var(--blue); outline-offset: -3px; }
+
+    dialog {
+      border: 4px solid var(--line); border-radius: 10px; padding: 0;
+      width: min(420px, 92vw); color: var(--ink);
+    }
+    dialog::backdrop { background: rgba(10,20,25,.55); }
+    dialog .head {
+      background: var(--black); color: #fff; padding: 12px 16px;
+      font-family: Impact, "Arial Black", sans-serif; letter-spacing: .5px; font-size: 20px;
+    }
+    dialog form { padding: 16px; display: grid; gap: 12px; margin: 0; }
+    dialog .times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    dialog label { display: grid; gap: 4px; font-weight: 700; font-size: 14px; }
+    dialog input[type=time], dialog input[type=text] {
+      font: inherit; padding: 8px 10px; border: 2px solid var(--line); border-radius: 6px;
+    }
+    dialog .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    dialog .actions .spacer { margin-right: auto; }
+
+    @media (max-width: 600px) {
+      :root { --col: 118px; }
+      td.day { font-size: 18px; width: 64px; }
+      td.lab { width: 44px; font-size: 11px; }
+      .tt thead th.corner { width: 108px; }
+    }
+  </style>
+</head>
+<body>
+<%
+  const fmt = t => (t || '').replace(':', '.').replace(/^0/, ''); // "08:20" -> "8.20"
+  const d = new Date(date + 'T00:00:00Z');
+  const dayName = d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' }).toUpperCase();
+  const prettyDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+%>
+<div class="wrap">
+  <h1>DAILY ROUTINE TIMETABLE</h1>
+
+  <div class="datebar">
+    <form action="/routine" method="get">
+      <label for="datePick">Date</label>
+      <input type="date" id="datePick" name="date" value="<%= date %>">
+      <button class="btn" type="submit">Go</button>
     </form>
-
-    <button type="button" class="add-btn" onclick="toggleAddPanel()">+ Add Slot</button>
   </div>
 
-  <div class="add-panel" id="addPanel">
-    <div class="add-panel-inner">
-      <h3>New Time Slot</h3>
-      <form action="/routine" method="POST" class="add-form-row">
-        <input type="hidden" name="date" value="<%= date %>">
-        <div class="field">
-          <label>Start</label>
-          <input type="time" name="hour" required>
-        </div>
-        <div class="field">
-          <label>End</label>
-          <input type="time" name="endHour" required>
-        </div>
-        <div class="field field-task">
-          <label>Task</label>
-          <input type="text" name="task" placeholder="Task for this slot" required>
-        </div>
-        <button type="submit" class="btn btn-save">Save Slot</button>
-      </form>
-    </div>
-  </div>
-
-  <div class="list">
-    <% slots.forEach(s => {
-         const check = checksMap[s._id.toString()] || { done: false, comment: '' };
-         const rowId = s._id.toString();
-    %>
-      <div class="routine-row <%= check.done ? 'success' : '' %>">
-
-        <!-- Permanent slot edit form (inputs below attach to it via form="...") -->
-        <form id="slot-form-<%= rowId %>" action="/routine/<%= rowId %>/edit" method="POST">
-          <input type="hidden" name="date" value="<%= date %>">
-        </form>
-
-        <!-- Done/comment form for this date -->
-        <form id="check-form-<%= rowId %>" action="/routine/<%= rowId %>/check" method="POST">
-          <input type="hidden" name="date" value="<%= date %>">
-        </form>
-
-        <div class="col-time">
-          <input type="time" name="hour" value="<%= s.hour %>" form="slot-form-<%= rowId %>" required>
-          <span>–</span>
-          <input type="time" name="endHour" value="<%= s.endHour %>" form="slot-form-<%= rowId %>" required>
-        </div>
-
-        <div class="col-task">
-          <input type="text" name="task" value="<%= s.task %>" form="slot-form-<%= rowId %>" required>
-          <button type="submit" form="slot-form-<%= rowId %>" class="btn btn-save">Save</button>
-        </div>
-
-        <div class="col-actions">
-          <div class="actions-top">
-            <% if (check.comment) { %>
-              <span class="comment-preview" title="<%= check.comment %>"><%= check.comment %></span>
-            <% } %>
-            <label class="checkbox-label">
-              <input
-                type="checkbox"
-                name="done"
-                form="check-form-<%= rowId %>"
-                <%= check.done ? 'checked' : '' %>
-                onchange="document.getElementById('check-form-<%= rowId %>').submit()"
-              >
-              Done
-            </label>
-            <button type="button" class="more-toggle" onclick="toggleMore('<%= rowId %>')">More</button>
-          </div>
-
-          <div class="more-panel" id="more-<%= rowId %>">
-            <input
-              type="text"
-              name="comment"
-              class="comment-input"
-              placeholder="Add a comment..."
-              value="<%= check.comment %>"
-              form="check-form-<%= rowId %>"
-            >
-            <div class="more-panel-buttons">
-              <button type="submit" form="check-form-<%= rowId %>" class="btn btn-save">Save</button>
-              <form action="/routine/<%= rowId %>?_method=DELETE&date=<%= date %>" method="POST"
-                    onsubmit="return confirm('Delete this slot permanently?')">
-                <button type="submit" class="btn btn-danger">Delete</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    <% }) %>
+  <div class="scroll">
+    <table class="tt">
+      <thead>
+        <tr>
+          <th class="corner" colspan="2"><span>ROUTINE</span></th>
+          <% slots.forEach(s => { %>
+            <th class="slothead" tabindex="0" role="button" title="Edit this slot"
+                data-edit data-id="<%= s._id %>" data-hour="<%= s.hour %>"
+                data-end="<%= s.endHour %>" data-task="<%= s.task %>">
+              <%= fmt(s.hour) %>
+              <span class="to"><%= fmt(s.endHour) %></span>
+            </th>
+          <% }) %>
+          <th class="addhead">ADD</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="day" rowspan="3"><%= dayName %><small><%= prettyDate %></small></td>
+          <td class="lab">Task</td>
+          <% slots.forEach(s => {
+               const c = checksMap[s._id.toString()] || { done: false, comment: '' }; %>
+            <td class="task <%= c.done ? 'finished' : '' %>" data-slot="<%= s._id %>">
+              <button type="button" class="cell" data-edit data-id="<%= s._id %>"
+                      data-hour="<%= s.hour %>" data-end="<%= s.endHour %>"
+                      data-task="<%= s.task %>"><%= s.task || 'Add task' %></button>
+            </td>
+          <% }) %>
+          <td class="addcol" rowspan="3">
+            <button type="button" id="addBtn" aria-label="Add a time slot">+<span>Add slot</span></button>
+          </td>
+        </tr>
+        <tr>
+          <td class="lab">Done</td>
+          <% slots.forEach(s => {
+               const c = checksMap[s._id.toString()] || { done: false, comment: '' }; %>
+            <td class="done">
+              <input type="checkbox" data-check="<%= s._id %>" aria-label="Mark done" <%= c.done ? 'checked' : '' %>>
+            </td>
+          <% }) %>
+        </tr>
+        <tr>
+          <td class="lab">Note</td>
+          <% slots.forEach(s => {
+               const c = checksMap[s._id.toString()] || { done: false, comment: '' }; %>
+            <td class="note">
+              <input type="text" data-note="<%= s._id %>" value="<%= c.comment %>" placeholder="Note" aria-label="Note">
+            </td>
+          <% }) %>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
+<!-- Add / edit dialog -->
+<dialog id="slotDialog">
+  <div class="head" id="dlgTitle">EDIT SLOT</div>
+  <form id="slotForm" method="post" action="/routine">
+    <input type="hidden" name="date" value="<%= date %>">
+    <div class="times">
+      <label>Start <input type="time" name="hour" id="fHour" required></label>
+      <label>End <input type="time" name="endHour" id="fEnd" required></label>
+    </div>
+    <label>Task
+      <input type="text" name="task" id="fTask" required maxlength="120" autocomplete="off">
+    </label>
+    <div class="actions">
+      <button type="submit" class="btn danger spacer" id="delBtn" formnovalidate
+              onclick="return confirm('Delete this slot?')">Delete</button>
+      <button type="button" class="btn" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn primary">Save changes</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
-  function toggleAddPanel() {
-    document.getElementById('addPanel').classList.toggle('open');
+  const DATE = "<%= date %>";
+  const dlg = document.getElementById('slotDialog');
+  const form = document.getElementById('slotForm');
+  const delBtn = document.getElementById('delBtn');
+
+  function openDialog(slot) {
+    if (slot) {
+      document.getElementById('dlgTitle').textContent = 'EDIT SLOT';
+      form.action = '/routine/' + slot.id + '/edit';
+      delBtn.style.display = '';
+      delBtn.setAttribute('formaction', '/routine/' + slot.id + '/delete');
+      document.getElementById('fHour').value = slot.hour || '';
+      document.getElementById('fEnd').value = slot.end || '';
+      document.getElementById('fTask').value = slot.task || '';
+    } else {
+      document.getElementById('dlgTitle').textContent = 'ADD SLOT';
+      form.action = '/routine';
+      delBtn.style.display = 'none';
+      delBtn.removeAttribute('formaction');
+      document.getElementById('fHour').value = '';
+      document.getElementById('fEnd').value = '';
+      document.getElementById('fTask').value = '';
+    }
+    dlg.showModal();
+    document.getElementById(slot ? 'fTask' : 'fHour').focus();
   }
 
-  function toggleMore(id) {
-    document.getElementById('more-' + id).classList.toggle('open');
+  document.querySelectorAll('[data-edit]').forEach(el => {
+    const open = () => openDialog({
+      id: el.dataset.id, hour: el.dataset.hour, end: el.dataset.end, task: el.dataset.task
+    });
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && el.tagName === 'TH') { e.preventDefault(); open(); }
+    });
+  });
+  document.getElementById('addBtn').addEventListener('click', () => openDialog(null));
+  document.getElementById('cancelBtn').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+
+  // Save done + note for this date without reloading
+  function saveCheck(id) {
+    const box = document.querySelector('[data-check="' + id + '"]');
+    const note = document.querySelector('[data-note="' + id + '"]');
+    const body = new URLSearchParams({ date: DATE, comment: note.value });
+    if (box.checked) body.append('done', 'on');
+
+    fetch('/routine/' + id + '/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+      body
+    }).then(r => {
+      if (!r.ok) throw new Error('Save failed');
+      const cell = document.querySelector('td.task[data-slot="' + id + '"]');
+      if (cell) cell.classList.toggle('finished', box.checked);
+      const td = note.closest('td');
+      td.classList.add('saved');
+      setTimeout(() => td.classList.remove('saved'), 600);
+    }).catch(() => alert('Could not save. Please try again.'));
   }
+
+  document.querySelectorAll('[data-check]').forEach(el =>
+    el.addEventListener('change', () => saveCheck(el.dataset.check)));
+  document.querySelectorAll('[data-note]').forEach(el => {
+    el.addEventListener('change', () => saveCheck(el.dataset.note));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
+  });
 </script>
+</body>
+</html>
